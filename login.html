@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Login — SpamShield{% endblock %}
+
+{% block extra_head %}
+<style>
+  .auth-wrap {
+    min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 2rem;
+  }
+  .auth-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2.5rem;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.5);
+    animation: fadeUp .5s ease;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)} }
+  .logo { display:flex; align-items:center; gap:.75rem; margin-bottom:2rem; }
+  .logo-icon {
+    width:44px; height:44px; border-radius:12px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display:flex; align-items:center; justify-content:center; font-size:1.4rem;
+  }
+  .logo-text { font-size:1.4rem; font-weight:700; letter-spacing:-.03em; }
+  .logo-text span { color:var(--accent); }
+  h2 { font-size:1.5rem; font-weight:700; margin-bottom:.4rem; }
+  .subtitle { color:var(--muted); font-size:.9rem; margin-bottom:2rem; }
+  .field { margin-bottom:1.2rem; }
+  label { display:block; font-size:.82rem; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:.5rem; }
+  input {
+    width:100%; padding:.75rem 1rem;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:10px; color:var(--text);
+    font-family:inherit; font-size:.95rem; outline:none;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,212,255,.12); }
+  .btn {
+    width:100%; padding:.85rem;
+    background:linear-gradient(135deg, var(--accent), var(--accent2));
+    border:none; border-radius:10px; color:#fff;
+    font-family:inherit; font-size:1rem; font-weight:700;
+    cursor:pointer; transition:opacity .2s, transform .1s; margin-top:.5rem;
+  }
+  .btn:hover { opacity:.9; }
+  .btn:active { transform:scale(.98); }
+  .link-row { text-align:center; margin-top:1.5rem; color:var(--muted); font-size:.9rem; }
+  .badge {
+    display:inline-flex; align-items:center; gap:.4rem;
+    background:rgba(46,213,115,.1); border:1px solid rgba(46,213,115,.3);
+    color:var(--ham); border-radius:8px; padding:.35rem .75rem;
+    font-size:.8rem; font-weight:600; margin-bottom:1.5rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="auth-wrap">
+  <div class="auth-card">
+    <div class="logo">
+      <div class="logo-icon">🛡️</div>
+      <div class="logo-text">Spam<span>Shield</span></div>
+    </div>
+    <span class="badge">✓ ML-Powered Spam Detection</span>
+    <h2>Welcome Back</h2>
+    <p class="subtitle">Sign in to your account to continue</p>
+
+    <form method="POST">
+      <div class="field">
+        <label>Email Address</label>
+        <input type="email" name="email" placeholder="you@example.com" required autofocus />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="password" name="password" placeholder="Your password" required />
+      </div>
+      <button type="submit" class="btn">Sign In →</button>
+    </form>
+
+    <p class="link-row">Don't have an account? <a href="{{ url_for('register') }}">Register</a></p>
+  </div>
+</div>
+{% endblock %}

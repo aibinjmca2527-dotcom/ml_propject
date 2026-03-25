@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — SpamShield{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── Layout ───────────────────────── */
+  .app { display:flex; min-height:100vh; }
+
+  /* ── Sidebar ──────────────────────── */
+  .sidebar {
+    width:240px; min-height:100vh; flex-shrink:0;
+    background:var(--surface); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; padding:1.5rem 1rem;
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-logo { display:flex; align-items:center; gap:.6rem; margin-bottom:2.5rem; padding:.5rem; }
+  .logo-icon {
+    width:38px; height:38px; border-radius:10px;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center; font-size:1.2rem;
+  }
+  .logo-text { font-size:1.2rem; font-weight:700; }
+  .logo-text span { color:var(--accent); }
+  .nav-label { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.1em; padding:0 .5rem; margin-bottom:.5rem; }
+  .nav-item {
+    display:flex; align-items:center; gap:.75rem;
+    padding:.65rem .75rem; border-radius:10px;
+    color:var(--muted); font-weight:500; font-size:.9rem;
+    text-decoration:none; transition:background .15s, color .15s;
+    margin-bottom:.2rem; cursor:pointer; border:none; background:none; width:100%;
+    font-family:inherit;
+  }
+  .nav-item:hover, .nav-item.active { background:var(--card); color:var(--text); text-decoration:none; }
+  .nav-item.logout { color:var(--spam); margin-top:auto; }
+  .nav-item.logout:hover { background:rgba(255,71,87,.1); }
+  .spacer { flex:1; }
+
+  .user-pill {
+    display:flex; align-items:center; gap:.75rem;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; padding:.75rem;
+    margin-bottom:1rem;
+  }
+  .avatar {
+    width:36px; height:36px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    display:flex; align-items:center; justify-content:center;
+    font-weight:700; font-size:.9rem; flex-shrink:0;
+  }
+  .user-name { font-weight:600; font-size:.9rem; }
+  .user-role { font-size:.75rem; color:var(--muted); }
+
+  /* ── Main ─────────────────────────── */
+  .main { flex:1; padding:2rem; overflow-y:auto; }
+  .page-header { margin-bottom:2rem; }
+  .page-header h1 { font-size:1.6rem; font-weight:700; margin-bottom:.3rem; }
+  .page-header p { color:var(--muted); font-size:.9rem; }
+
+  /* ── Stats ────────────────────────── */
+  .stats-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2rem; }
+  .stat-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:14px; padding:1.25rem; position:relative; overflow:hidden;
+  }
+  .stat-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+  }
+  .stat-card.total::before { background:var(--accent); }
+  .stat-card.spam-c::before { background:var(--spam); }
+  .stat-card.ham-c::before  { background:var(--ham); }
+  .stat-label { font-size:.8rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.5rem; }
+  .stat-val { font-size:2rem; font-weight:700; font-family:'JetBrains Mono',monospace; }
+  .stat-card.spam-c .stat-val { color:var(--spam); }
+  .stat-card.ham-c  .stat-val { color:var(--ham); }
+
+  /* ── Checker Card ─────────────────── */
+  .checker-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:18px; padding:1.75rem; margin-bottom:2rem;
+  }
+  .checker-card h2 { font-size:1.15rem; font-weight:700; margin-bottom:.4rem; }
+  .checker-card p  { color:var(--muted); font-size:.875rem; margin-bottom:1.25rem; }
+  textarea {
+    width:100%; min-height:160px; padding:1rem;
+    background:var(--card); border:1px solid var(--border);
+    border-radius:12px; color:var(--text); font-family:'Space Grotesk',sans-serif;
+    font-size:.95rem; resize:vertical; outline:none;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  textarea:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(0,212,255,.1); }
+  .check-btn {
+    margin-top:1rem; padding:.8rem 2rem;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    border:none; border-radius:10px; color:#fff;
+    font-family:inherit; font-size:1rem; font-weight:700;
+    cursor:pointer; transition:opacity .2s, transform .1s;
+    display:flex; align-items:center; gap:.5rem;
+  }
+  .check-btn:hover { opacity:.9; }
+  .check-btn:active { transform:scale(.98); }
+  .check-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+  /* ── Result ───────────────────────── */
+  .result-box {
+    margin-top:1.25rem; padding:1.25rem; border-radius:14px;
+    display:none; animation:fadeUp .35s ease;
+  }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)} }
+  .result-box.spam { background:rgba(255,71,87,.1); border:1px solid rgba(255,71,87,.3); }
+  .result-box.ham  { background:rgba(46,213,115,.1); border:1px solid rgba(46,213,115,.3); }
+  .result-header { display:flex; align-items:center; gap:1rem; margin-bottom:.75rem; }
+  .result-icon { font-size:2.5rem; }
+  .result-label { font-size:1.4rem; font-weight:800; }
+  .result-box.spam .result-label { color:var(--spam); }
+  .result-box.ham  .result-label { color:var(--ham); }
+  .confidence-bar-wrap { margin-top:.5rem; }
+  .conf-label { font-size:.82rem; color:var(--muted); margin-bottom:.4rem; }
+  .conf-bar { height:8px; border-radius:99px; background:var(--card); overflow:hidden; }
+  .conf-fill { height:100%; border-radius:99px; transition:width .6s ease; }
+  .result-box.spam .conf-fill { background:var(--spam); }
+  .result-box.ham  .conf-fill { background:var(--ham); }
+  .conf-pct { font-size:.82rem; font-family:'JetBrains Mono',monospace; margin-top:.3rem; }
+
+  /* ── History ──────────────────────── */
+  .history-card {
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:18px; padding:1.75rem;
+  }
+  .history-card h2 { font-size:1.15rem; font-weight:700; margin-bottom:1.25rem; }
+  .hist-item {
+    display:flex; align-items:flex-start; gap:1rem;
+    padding:.875rem 0; border-bottom:1px solid var(--border);
+  }
+  .hist-item:last-child { border-bottom:none; }
+  .hist-badge {
+    padding:.25rem .65rem; border-radius:6px; font-size:.75rem;
+    font-weight:700; flex-shrink:0; font-family:'JetBrains Mono',monospace;
+  }
+  .hist-badge.spam { background:rgba(255,71,87,.15); color:var(--spam); }
+  .hist-badge.ham  { background:rgba(46,213,115,.15); color:var(--ham); }
+  .hist-text { font-size:.875rem; color:var(--muted); flex:1; line-height:1.4; }
+  .hist-conf { font-size:.75rem; color:var(--muted); font-family:'JetBrains Mono',monospace; flex-shrink:0; }
+  .empty-state { text-align:center; padding:2rem; color:var(--muted); font-size:.9rem; }
+
+  /* ── Spinner ──────────────────────── */
+  .spinner {
+    width:18px; height:18px; border:2px solid rgba(255,255,255,.3);
+    border-top-color:#fff; border-radius:50%;
+    animation:spin .7s linear infinite; display:none;
+  }
+  @keyframes spin { to { transform:rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    .sidebar { display:none; }
+    .stats-grid { grid-template-columns:1fr; }
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🛡️</div>
+      <div class="logo-text">Spam<span>Shield</span></div>
+    </div>
+
+    <div class="user-pill">
+      <div class="avatar">{{ session.username[0].upper() }}</div>
+      <div>
+        <div class="user-name">{{ session.username }}</div>
+        <div class="user-role">Free Account</div>
+      </div>
+    </div>
+
+    <div class="nav-label">Menu</div>
+    <a href="#" class="nav-item active">🏠 &nbsp;Dashboard</a>
+    <a href="#checker" class="nav-item">🔍 &nbsp;Check Email</a>
+    <a href="#history" class="nav-item">📋 &nbsp;History</a>
+
+    <div class="spacer"></div>
+
+    <a href="{{ url_for('logout') }}" class="nav-item logout">🚪 &nbsp;Logout</a>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main">
+    <div class="page-header">
+      <h1>👋 Welcome, {{ session.username }}!</h1>
+      <p>Use the spam detector below to analyse any email or message.</p>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="stat-label">Total Checked</div>
+        <div class="stat-val">{{ total }}</div>
+      </div>
+      <div class="stat-card spam-c">
+        <div class="stat-label">Spam Detected</div>
+        <div class="stat-val">{{ spam_count }}</div>
+      </div>
+      <div class="stat-card ham-c">
+        <div class="stat-label">Legitimate (Ham)</div>
+        <div class="stat-val">{{ ham_count }}</div>
+      </div>
+    </div>
+
+    <!-- Checker -->
+    <div class="checker-card" id="checker">
+      <h2>🔍 Spam Detector</h2>
+      <p>Paste any email body or message below. The AI model will classify it instantly.</p>
+      <textarea id="msg-input" placeholder="Paste your email content or message here...&#10;&#10;Example: Congratulations! You've won a FREE iPhone. Click here to claim now!"></textarea>
+      <button class="check-btn" id="check-btn" onclick="checkSpam()">
+        <span id="btn-text">Analyse Message</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+      <div class="result-box" id="result-box">
+        <div class="result-header">
+          <div class="result-icon" id="result-icon"></div>
+          <div>
+            <div class="result-label" id="result-label"></div>
+            <div style="font-size:.85rem;color:var(--muted)" id="result-desc"></div>
+          </div>
+        </div>
+        <div class="confidence-bar-wrap">
+          <div class="conf-label">Model Confidence</div>
+          <div class="conf-bar"><div class="conf-fill" id="conf-fill" style="width:0%"></div></div>
+          <div class="conf-pct" id="conf-pct"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- History -->
+    <div class="history-card" id="history">
+      <h2>📋 Recent Checks</h2>
+      {% if history %}
+        {% for msg, result, conf, checked in history %}
+          <div class="hist-item">
+            <span class="hist-badge {{ result.lower() }}">{{ result }}</span>
+            <span class="hist-text">{{ msg[:100] }}{% if msg|length > 100 %}…{% endif %}</span>
+            <span class="hist-conf">{{ "%.1f"|format(conf) }}%</span>
+          </div>
+        {% endfor %}
+      {% else %}
+        <div class="empty-state">No checks yet — run your first analysis above! 👆</div>
+      {% endif %}
+    </div>
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function checkSpam() {
+  const msg = document.getElementById('msg-input').value.trim();
+  if (!msg) { alert('Please enter a message first.'); return; }
+
+  const btn     = document.getElementById('check-btn');
+  const spinner = document.getElementById('spinner');
+  const btnText = document.getElementById('btn-text');
+  const resBox  = document.getElementById('result-box');
+
+  // Reset & show loading state
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnText.textContent = 'Analysing...';
+  resBox.style.display = 'none';
+  document.getElementById('conf-fill').style.width = '0%';
+
+  let success = false;
+
+  try {
+    const resp = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg })
+    });
+
+    // Check HTTP status first
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      alert(errData.error || 'Server error: ' + resp.status);
+      return;
+    }
+
+    const data = await resp.json();
+
+    if (data.error) {
+      alert(data.error);
+      return;
+    }
+
+    // ── Show result ──────────────────────────────────
+    const isSpam = data.is_spam;
+    resBox.className = 'result-box ' + (isSpam ? 'spam' : 'ham');
+    document.getElementById('result-icon').textContent  = isSpam ? '🚨' : '✅';
+    document.getElementById('result-label').textContent = isSpam ? 'SPAM DETECTED' : 'LEGITIMATE (HAM)';
+    document.getElementById('result-desc').textContent  = isSpam
+      ? 'This message shows strong spam characteristics.'
+      : 'This message appears to be safe and legitimate.';
+    document.getElementById('conf-pct').textContent = 'Confidence: ' + data.confidence + '%';
+    resBox.style.display = 'block';
+
+    // Animate confidence bar after a tiny delay so CSS transition fires
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.getElementById('conf-fill').style.width = data.confidence + '%';
+      });
+    });
+
+    success = true;
+
+    // Reload history section after user has seen the result (4 seconds)
+    setTimeout(() => location.reload(),6000);
+
+  } catch (e) {
+    console.error(e);
+    alert('Could not connect to the server. Make sure app.py is running.');
+  } finally {
+    // Re-enable button only if we did NOT get a successful result
+    // (if success=true, page will reload anyway)
+    if (!success) {
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      btnText.textContent = 'Analyse Message';
+    } else {
+      // Keep button showing "Done" until reload
+      btnText.textContent = 'Done ✓';
+      spinner.style.display = 'none';
+    }
+  }
+}
+
+// Allow Ctrl+Enter to submit
+document.getElementById('msg-input').addEventListener('keydown', function(e) {
+  if (e.ctrlKey && e.key === 'Enter') checkSpam();
+});
+</script>
+{% endblock %}

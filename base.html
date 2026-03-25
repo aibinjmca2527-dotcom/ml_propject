@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}SpamShield{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:       #0a0e1a;
+      --surface:  #111827;
+      --card:     #1a2235;
+      --border:   #243044;
+      --accent:   #00d4ff;
+      --accent2:  #7c3aed;
+      --spam:     #ff4757;
+      --ham:      #2ed573;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --radius:   14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Space Grotesk', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      background-image: radial-gradient(ellipse at 20% 20%, rgba(0,212,255,.06) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 80%, rgba(124,58,237,.06) 0%, transparent 60%);
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Flash messages */
+    .flash-container { position: fixed; top: 1.2rem; right: 1.2rem; z-index: 999; display: flex; flex-direction: column; gap: .5rem; }
+    .flash {
+      padding: .75rem 1.25rem; border-radius: 10px; font-size: .875rem; font-weight: 500;
+      animation: slideIn .3s ease; max-width: 340px;
+    }
+    .flash.success { background: rgba(46,213,115,.15); border: 1px solid var(--ham); color: var(--ham); }
+    .flash.error   { background: rgba(255,71,87,.15);  border: 1px solid var(--spam); color: var(--spam); }
+    .flash.warning { background: rgba(251,191,36,.15); border: 1px solid #fbbf24; color: #fbbf24; }
+    .flash.info    { background: rgba(0,212,255,.15);  border: 1px solid var(--accent); color: var(--accent); }
+    @keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+  </style>
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <div class="flash-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% for cat, msg in messages %}
+        <div class="flash {{ cat }}">{{ msg }}</div>
+      {% endfor %}
+    {% endwith %}
+  </div>
+  {% block content %}{% endblock %}
+  <script>
+    // Auto-dismiss flash messages
+    setTimeout(() => {
+      document.querySelectorAll('.flash').forEach(el => {
+        el.style.transition = 'opacity .5s';
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 500);
+      });
+    }, 4000);
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>
